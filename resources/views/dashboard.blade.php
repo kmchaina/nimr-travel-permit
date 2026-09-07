@@ -17,7 +17,9 @@
 
     /* ── Focal request for hero card ──────────────────────────────── */
     $focalRequest = null;
-    if (!$user->isHr() && !$user->isDirectorGeneral()) {
+    // HR travels too, so their own request belongs on their dashboard. The DG
+    // is excluded because they have no chain to submit through at all.
+    if (!$user->isDirectorGeneral()) {
         $focalRequest = $myRequests->firstWhere('status', 'returned')
             ?? $myRequests->where('status', 'pending')->sortBy('b_departure_date')->first()
             ?? $myRequests->firstWhere('status', 'draft');
@@ -311,10 +313,10 @@
                         <div class="flex items-baseline gap-2">
                             <span class="font-bold text-white leading-none"
                                   style="font-size:56px;letter-spacing:-0.04em;">00</span>
-                            <span class="text-sm" style="color:#cfe1ff;">Departing today</span>
+                            <span class="text-sm" style="color:#cfe1ff;">{{ __('dashboard.departing_today') }}</span>
                         </div>
                         @else
-                        <p class="text-sm font-semibold" style="color:#cfe1ff;">Trip in progress or past</p>
+                        <p class="text-sm font-semibold" style="color:#cfe1ff;">{{ __('dashboard.trip_in_progress') }}</p>
                         @endif
                     </div>
                     @endif
@@ -351,7 +353,7 @@
                         <div class="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
                             <svg class="w-4 h-4" fill="none" stroke="#4ade80" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                         </div>
-                        <p class="text-sm font-semibold" style="color:#86efac;">Permit issued — approved for travel.</p>
+                        <p class="text-sm font-semibold" style="color:#86efac;">{{ __('dashboard.permit_issued_full') }}</p>
                     </div>
                     @endif
 
@@ -433,7 +435,7 @@
 
         {{-- Header --}}
         <div class="flex items-center gap-3 mb-5 flex-wrap">
-            <h3 class="text-sm font-semibold text-white">Action required</h3>
+            <h3 class="text-sm font-semibold text-white">{{ __('dashboard.action_required') }}</h3>
             <span class="px-2.5 py-0.5 rounded-full text-[10.5px] font-bold"
                   style="background:#f59e0b;color:#1a0f00;letter-spacing:0.08em;">
                 {{ $needsMyAction->count() }} waiting on you
@@ -534,7 +536,7 @@
 
             <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                 <h3 class="text-[15px] font-semibold" style="color:#0f172a;">
-                    {{ ($user->isHr() || $user->isDirectorGeneral()) ? 'Recent Requests' : 'Your Requests' }}
+                    {{ ($user->isHr() || $user->isDirectorGeneral()) ? __('dashboard.recent_requests') : __('dashboard.your_requests') }}
                 </h3>
                 <a href="{{ route('travel-requests.index') }}"
                    class="text-[12.5px] font-semibold hover:underline transition" style="color:#05499c;">
@@ -553,18 +555,18 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                     </svg>
                 </div>
-                <p class="text-sm" style="color:#94a3b8;">No requests yet.</p>
+                <p class="text-sm" style="color:#94a3b8;">{{ __('dashboard.none_yet') }}</p>
                 @if (!$user->isDirectorGeneral())
                     @if ($supervisorRequired && !$supervisor)
                     <a href="#supervisor-card"
                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-amber-800 border border-amber-300 bg-amber-50">
-                        Set supervisor first
+                        {{ __('dashboard.set_supervisor_first') }}
                     </a>
                     @else
                     <a href="{{ route('travel-requests.create') }}"
                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
                        style="background:#05499c;">
-                        + New request
+                        {{ __('dashboard.new_request_short') }}
                     </a>
                     @endif
                 @endif
@@ -608,13 +610,13 @@
                 {{-- Stage --}}
                 <div class="text-[11.5px] shrink-0 hidden md:block w-28 text-right" style="color:#64748b;">
                     @if ($tr->status === 'approved')
-                        <span style="color:#15803d;">Permit issued</span>
+                        <span style="color:#15803d;">{{ __('dashboard.permit_issued') }}</span>
                     @elseif ($tr->status === 'returned')
-                        <span style="color:#c2410c;font-weight:600;">Action needed</span>
+                        <span style="color:#c2410c;font-weight:600;">{{ __('dashboard.action_needed') }}</span>
                     @elseif ($tr->status === 'pending' && $tr->currentApprover)
                         With <span style="color:#0f172a;font-weight:600;">{{ explode(' ', $tr->currentApprover->name)[0] }}</span>
                     @elseif ($tr->status === 'draft')
-                        <span style="color:#94a3b8;">Not submitted</span>
+                        <span style="color:#94a3b8;">{{ __('dashboard.not_submitted') }}</span>
                     @else
                         —
                     @endif

@@ -56,6 +56,11 @@
                 if ($user->isHr() || $user->isDirectorGeneral()) {
                     $navItems[] = ['route' => 'travel-requests.index', 'label' => __('nav.all_requests'), 'icon' => 'document-list', 'badge' => null, 'pattern' => 'travel-requests.*'];
                     if ($user->isHr()) {
+                        // An HR officer oversees everyone's requests and also travels
+                        // themselves. Grouping them with the DG took away the only way
+                        // to start their own request — the DG has no approval chain to
+                        // submit through, but an HR officer does.
+                        $navItems[] = ['route' => 'travel-requests.create', 'label' => __('nav.new_request'), 'icon' => 'plus-circle', 'badge' => null, 'pattern' => 'travel-requests.create'];
                         $navItems[] = ['route' => 'hr.reports.index', 'label' => __('nav.hr_reports'), 'icon' => 'chart-bar', 'badge' => null, 'pattern' => 'hr.reports.*'];
                     }
                     if ($user->isDirectorGeneral()) {

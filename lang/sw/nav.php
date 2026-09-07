@@ -2,8 +2,8 @@
 
 return [
     'dashboard' => 'Dashibodi',
-    'my_requests' => 'Maombi Yangu',
-    'all_requests' => 'Maombi Yote',
+    'my_requests' => 'Maombi Yangu ya Safari',
+    'all_requests' => 'Maombi Yote ya Safari',
     'new_request' => 'Ombi Jipya',
     'edit_request' => 'Hariri Ombi',
     'view_request' => 'Angalia Ombi',

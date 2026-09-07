@@ -20,7 +20,7 @@
                 </p>
             </div>
         </div>
-        @if (!$user->isHr() && !$user->isDirectorGeneral())
+        @if (!$user->isDirectorGeneral())
         <a href="{{ route('travel-requests.create') }}"
            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white shadow-sm transition hover:opacity-90 shrink-0"
            style="background-color:#05499c;">
@@ -108,7 +108,7 @@
         @if (request()->hasAny(['q', 'status']))
         <p class="text-sm text-slate-400 mb-5">{{ __('travel.adjust_filters') }}</p>
         <a href="{{ route('travel-requests.index') }}" class="btn-secondary btn-sm">{{ __('travel.reset_search') }}</a>
-        @elseif (!$user->isHr() && !$user->isDirectorGeneral())
+        @elseif (!$user->isDirectorGeneral())
         <p class="text-sm text-slate-400 mb-5">{{ __('travel.no_submitted') }}</p>
         <a href="{{ route('travel-requests.create') }}" class="btn-primary btn-sm">{{ __('travel.first_submit') }}</a>
         @endif
