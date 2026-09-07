@@ -614,6 +614,7 @@ class TravelRequestController extends Controller
         bool $fileRequired = true,
     ): array {
         $req = $isDraft ? 'nullable' : 'required';
+        $noHandover = $request->boolean('g_no_handover_officer');
 
         // b_applicant_name / b_email / b_position are deliberately absent: the
         // traveller's identity is printed on an official permit and is filled
@@ -642,7 +643,17 @@ class TravelRequestController extends Controller
             'e_other_costs' => ['nullable', 'string'],
             'f_previous_travel_impact' => [$req, 'string'],
             'f_traveller_signed_date' => ['nullable', 'date'],
-            'g_handover_officer_name' => [$req, 'string', 'max:255'],
+            // Section G accepts one of two accounts of what happens to the
+            // traveller's duties: a named officer with a signed note, or a
+            // declaration that there is nobody to hand over to. The wizard
+            // makes the second deliberate — a checkbox, a written declaration
+            // and a confirmation dialog — but all of that is JavaScript, so
+            // the requirement is re-decided here from the submitted values.
+            'g_no_handover_officer' => ['nullable', 'boolean'],
+            'g_no_handover_declaration' => $noHandover && ! $isDraft
+                ? ['required', 'string', 'min:20', 'max:2000']
+                : ['nullable', 'string', 'max:2000'],
+            'g_handover_officer_name' => [$noHandover ? 'nullable' : $req, 'string', 'max:255'],
             'g_handover_officer_title' => ['nullable', 'string', 'max:255'],
             // Nullable, not required: permits saved before this column existed
             // carry a name and no id. handoverIdentity() does the real check —
@@ -651,7 +662,7 @@ class TravelRequestController extends Controller
         ];
 
         if ($withFile) {
-            $rules['g_handover_document'] = $isDraft || ! $fileRequired
+            $rules['g_handover_document'] = $isDraft || ! $fileRequired || $noHandover
                 ? ['nullable', 'file', 'mimes:pdf', 'max:5120']
                 : ['required', 'file', 'mimes:pdf', 'max:5120'];
 
@@ -713,6 +724,17 @@ class TravelRequestController extends Controller
      */
     private function handoverIdentity(Request $request, User $traveller): array
     {
+        // Declaring there is nobody to hand over to and naming somebody are
+        // mutually exclusive accounts. Clear the officer rather than leaving a
+        // name from an earlier edit sitting beside the declaration.
+        if ($request->boolean('g_no_handover_officer')) {
+            return [
+                'g_handover_officer_id' => null,
+                'g_handover_officer_name' => null,
+                'g_handover_officer_title' => null,
+            ];
+        }
+
         $officerId = $request->input('g_handover_officer_id');
 
         // Always return the key. Returning an empty array would let the raw id

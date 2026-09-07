@@ -331,6 +331,17 @@
                     {{-- G --}}
                     <div>
                         <h3 class="text-xs font-bold uppercase tracking-widest border-b pb-2 mb-3" style="color:#05499c;border-color:#bfdbfe;">G: {{ __('travel.section_g_title') }}</h3>
+                        @if ($tr->g_no_handover_officer)
+                        {{-- The traveller declared there is nobody to hand over to.
+                             Their declaration stands in place of the handover note,
+                             so the approver must actually see it. --}}
+                        <div class="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
+                            <p class="text-xs font-bold uppercase tracking-widest text-amber-800 mb-2">
+                                {{ __('travel.g_no_handover_shown_label') }}
+                            </p>
+                            <p class="text-sm text-amber-900 whitespace-pre-wrap leading-relaxed">{{ $tr->g_no_handover_declaration }}</p>
+                        </div>
+                        @else
                         <div class="space-y-2 mb-3">
                             <div class="flex items-baseline gap-2">
                                 <span class="text-sm w-16 shrink-0 text-slate-600">{{ __('travel.signed_name') }}</span>
@@ -341,6 +352,7 @@
                                 <span class="{{ $ro }}">{{ $tr->g_handover_officer_title ?? '—' }}</span>
                             </div>
                         </div>
+                        @endif
                         @if ($tr->g_handover_document)
                         <a href="{{ route('travel-requests.download', $tr) }}" class="btn-secondary btn-sm w-fit">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>

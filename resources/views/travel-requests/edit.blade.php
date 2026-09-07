@@ -300,6 +300,31 @@
                             <h3 class="text-sm font-bold text-slate-900">{{ __('travel.section_g_title') }}</h3>
                         </div>
                         <div class="p-6 space-y-5">
+                            <div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                                <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                                    <input type="checkbox" name="g_no_handover_officer" value="1"
+                                           x-model="noHandover" @change="onNoHandoverToggle()"
+                                           class="mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 shadow-sm focus:ring-amber-500">
+                                    <span>
+                                        <span class="block text-sm font-semibold text-amber-900">{{ __('travel.g_no_handover_checkbox') }}</span>
+                                        <span class="block text-xs text-amber-700 mt-0.5">{{ __('travel.g_no_handover_hint') }}</span>
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div class="field" x-show="noHandover" x-cloak>
+                                <label class="label">{{ __('travel.g_no_handover_declaration_label') }} <span class="text-red-500">*</span></label>
+                                <textarea name="g_no_handover_declaration" rows="4" class="input"
+                                          placeholder="{{ __('travel.g_no_handover_declaration_ph') }}">{{ old('g_no_handover_declaration', $tr->g_no_handover_declaration) }}</textarea>
+                                <p class="mt-1 text-xs text-slate-400">{{ __('travel.g_no_handover_declaration_help') }}</p>
+                                <p x-show="noHandoverError" x-cloak x-text="noHandoverError" class="mt-1.5 text-xs text-red-600"></p>
+                                @error('g_no_handover_declaration')
+                                <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <template x-if="!noHandover">
+                            <div class="space-y-5">
                             <div class="field relative"
                                  x-data="{
                                      open: false,
@@ -397,6 +422,8 @@
                                         ">
                                 </label>
                             </div>
+                            </div>
+                            </template>
                         </div>
                     </div>
                 </div>
@@ -465,6 +492,36 @@
                 </div>
             </form>
 
+            {{-- Same third gate as the create form. --}}
+            <div x-show="showNoHandoverModal" x-cloak
+                 class="fixed inset-0 z-50 flex items-center justify-center p-4"
+                 role="dialog" aria-modal="true" aria-labelledby="no-handover-title-edit">
+                <div class="absolute inset-0 bg-slate-900/50" @click="cancelNoHandover()"></div>
+                <div class="relative w-full max-w-lg rounded-2xl bg-white shadow-xl p-6">
+                    <div class="flex items-start gap-3 mb-4">
+                        <div class="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                        </div>
+                        <h3 id="no-handover-title-edit" class="text-base font-bold text-slate-900 pt-1.5">
+                            {{ __('travel.g_no_handover_modal_title') }}
+                        </h3>
+                    </div>
+                    <p class="text-sm text-slate-600 leading-relaxed mb-6">
+                        {{ __('travel.g_no_handover_modal_body') }}
+                    </p>
+                    <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                        <button type="button" @click="cancelNoHandover()" class="btn-secondary">
+                            {{ __('travel.g_no_handover_modal_cancel') }}
+                        </button>
+                        <button type="button" @click="confirmNoHandover()"
+                                class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+                                style="background-color:#b45309;">
+                            {{ __('travel.g_no_handover_modal_confirm') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -473,7 +530,51 @@
             return {
                 currentStep: initialStep,
                 stepTitles: @json(array_column($steps, 'title')),
-                next() { if (!this.validateStep(this.currentStep)) return; if (this.currentStep < 7) { this.currentStep++; window.scrollTo({ top: 0, behavior: 'smooth' }); } },
+
+                // Keep in sync with the same three gates on the create form.
+                noHandover: {{ Js::from((bool) old('g_no_handover_officer', $tr->g_no_handover_officer)) }},
+                noHandoverConfirmed: {{ Js::from((bool) old('g_no_handover_officer', $tr->g_no_handover_officer)) }},
+                showNoHandoverModal: false,
+                noHandoverError: '',
+
+                onNoHandoverToggle() {
+                    this.noHandoverConfirmed = false;
+                    this.noHandoverError = '';
+                },
+
+                confirmNoHandover() {
+                    this.noHandoverConfirmed = true;
+                    this.showNoHandoverModal = false;
+                    this.advance();
+                },
+
+                cancelNoHandover() {
+                    this.showNoHandoverModal = false;
+                    this.noHandover = false;
+                    this.noHandoverConfirmed = false;
+                },
+
+                advance() { if (this.currentStep < 7) { this.currentStep++; window.scrollTo({ top: 0, behavior: 'smooth' }); } },
+
+                next() {
+                    if (!this.validateStep(this.currentStep)) return;
+
+                    if (this.currentStep === 6 && this.noHandover) {
+                        const declaration = (this.$refs.form?.elements['g_no_handover_declaration']?.value || '').trim();
+                        if (declaration.length < 20) {
+                            this.noHandoverError = 'Please explain in your own words why no one can take over your duties.';
+                            return;
+                        }
+                        this.noHandoverError = '';
+
+                        if (!this.noHandoverConfirmed) {
+                            this.showNoHandoverModal = true;
+                            return;
+                        }
+                    }
+
+                    this.advance();
+                },
                 prev() { if (this.currentStep > 0) { this.currentStep--; window.scrollTo({ top: 0, behavior: 'smooth' }); } },
                 goTo(step) { if (step <= this.currentStep) { this.currentStep = step; window.scrollTo({ top: 0, behavior: 'smooth' }); } },
                 field(name) {

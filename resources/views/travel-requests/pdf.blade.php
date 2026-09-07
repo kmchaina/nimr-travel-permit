@@ -175,10 +175,17 @@ body { font-family: DejaVu Serif, serif; font-size: 10pt; color: #000; backgroun
 {{-- ── SECTION G ── --}}
 <div class="section">
     <div class="section-heading">G: Jina la Afisa na Cheo cha Utakayemkaimisha Majukumu Yako.</div>
+    @if ($tr->g_no_handover_officer)
+    <table class="field-table">
+        <tr><td class="field-label-cell">Tamko:</td><td class="field-value-cell">{{ __('travel.g_no_handover_checkbox', [], 'sw') }}</td></tr>
+        <tr><td class="field-label-cell">Sababu:</td><td class="field-value-cell">{{ $tr->g_no_handover_declaration }}</td></tr>
+    </table>
+    @else
     <table class="field-table">
         <tr><td class="field-label-cell">Jina:</td><td class="field-value-cell">{{ $tr->g_handover_officer_name }}</td></tr>
         <tr><td class="field-label-cell">Cheo:</td><td class="field-value-cell">{{ $tr->g_handover_officer_title }}</td></tr>
     </table>
+    @endif
 </div>
 
 {{-- ── APPROVAL SECTIONS ── --}}

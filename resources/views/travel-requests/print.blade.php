@@ -367,6 +367,16 @@
     {{-- ================================================================ --}}
     <div class="section">
         <div class="section-heading">G: Taja Jina la Afisa na Cheo cha Utakayemkaimisha Majukumu Yako. (Ambatisha Makubaliano ya Kukabidhiana Majuku (Handover Note))</div>
+        @if ($tr->g_no_handover_officer)
+        <div class="field-row">
+            <span class="field-label">Tamko:</span>
+            <span class="field-value">{{ __('travel.g_no_handover_checkbox', [], 'sw') }}</span>
+        </div>
+        <div class="field-row">
+            <span class="field-label">Sababu:</span>
+            <span class="field-value">{{ $tr->g_no_handover_declaration }}</span>
+        </div>
+        @else
         <div class="field-row">
             <span class="field-label">Jina:</span>
             <span class="field-value">{{ $tr->g_handover_officer_name }}</span>
@@ -375,6 +385,7 @@
             <span class="field-label">Cheo:</span>
             <span class="field-value">{{ $tr->g_handover_officer_title }}</span>
         </div>
+        @endif
     </div>
 
     {{-- ================================================================ --}}
