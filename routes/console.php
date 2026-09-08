@@ -2,7 +2,9 @@
 
 use Illuminate\Support\Facades\Schedule;
 
-// Daily reminder at 08:00 — notify approvers about requests pending ≥ 3 days
+// Runs every morning, but a given request is only chased every 3 days: the
+// command decides what is due, counting from when the request landed with its
+// current approver. The requester is copied on each one.
 Schedule::command('approvals:remind --days=3')
     ->dailyAt('08:00')
     ->withoutOverlapping()

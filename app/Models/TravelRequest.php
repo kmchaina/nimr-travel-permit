@@ -102,6 +102,7 @@ class TravelRequest extends Model
         'g_handover_document',
         'g_no_handover_officer',
         'g_no_handover_declaration',
+        'approval_last_reminded_at',
         'travel_report_document',
         'travel_report_original_name',
         'travel_report_notes',
@@ -117,6 +118,7 @@ class TravelRequest extends Model
     {
         return [
             'g_no_handover_officer' => 'boolean',
+            'approval_last_reminded_at' => 'datetime',
             'b_departure_date' => 'date',
             'b_return_date' => 'date',
             'f_traveller_signed_date' => 'date',
