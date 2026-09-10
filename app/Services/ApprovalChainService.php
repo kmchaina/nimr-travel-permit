@@ -10,6 +10,8 @@ use RuntimeException;
 
 class ApprovalChainService
 {
+    public function __construct(private SupervisorService $supervisors) {}
+
     /**
      * Build the ordered approval chain for a given traveller.
      *
@@ -157,6 +159,30 @@ class ApprovalChainService
     // Chain builders per unit type
     // ------------------------------------------------------------------
 
+    /**
+     * A stored supervisor_id is only as good as the day it was chosen. If that
+     * person has since been demoted, moved unit or deactivated, the chain would
+     * still route step one to them — sending a permit for approval to somebody
+     * with no authority to approve it. Refuse, and say what to do about it.
+     */
+    private function assertSupervisorStillValid(User $traveller): int
+    {
+        $supervisorId = (int) $traveller->supervisor_id;
+
+        if (! $this->supervisors->isValidCandidate(
+            $supervisorId,
+            $traveller->unit,
+            $traveller->role,
+            $traveller->getKey(),
+        )) {
+            throw new RuntimeException(
+                'Your selected supervisor can no longer approve travel for you — their role or unit has changed. Please choose your supervisor again on the Dashboard before submitting.'
+            );
+        }
+
+        return $supervisorId;
+    }
+
     private function chainForCentre(User $traveller): array
     {
         $unit          = $traveller->unit;
@@ -191,7 +217,7 @@ class ApprovalChainService
                     ['stage' => 'final', 'approver_id' => $centreManager->id],
                 ],
                 default => [
-                    ['stage' => 'supervisor', 'approver_id' => $traveller->supervisor_id],
+                    ['stage' => 'supervisor', 'approver_id' => $this->assertSupervisorStillValid($traveller)],
                     ['stage' => 'final',      'approver_id' => $centreManager->id],
                 ],
             },
@@ -225,7 +251,7 @@ class ApprovalChainService
 
             'staff', 'hr', 'system_admin' => $traveller->supervisor_id
                 ? [
-                    ['stage' => 'supervisor', 'approver_id' => $traveller->supervisor_id],
+                    ['stage' => 'supervisor', 'approver_id' => $this->assertSupervisorStillValid($traveller)],
                     ['stage' => 'director',   'approver_id' => $directorId],
                     ['stage' => 'final',      'approver_id' => $dg->id],
                 ]
@@ -250,7 +276,7 @@ class ApprovalChainService
 
             'staff', 'hr', 'system_admin' => $traveller->supervisor_id
                 ? [
-                    ['stage' => 'supervisor', 'approver_id' => $traveller->supervisor_id],
+                    ['stage' => 'supervisor', 'approver_id' => $this->assertSupervisorStillValid($traveller)],
                     ['stage' => 'final',      'approver_id' => $dg->id],
                 ]
                 : throw new RuntimeException(

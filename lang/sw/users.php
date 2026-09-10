@@ -85,4 +85,5 @@ return [
     'role_desc_director_general' => 'Mtoa idhini wa mwisho kabisa kwa maombi yote ya makao makuu.',
     'role_desc_hr'               => 'Anapokea nakala za arifa tu — hawezi kutoa idhini.',
     'role_desc_system_admin'     => 'Anasimamia akaunti za watumiaji, wadhifu, na upangaji wa vitengo.',
+    'lead_post_already_held' => ':name tayari ni :role wa :unit. Kitengo kina kiongozi mmoja kwa wakati — badilisha wadhifa wake kwanza, kisha umteue mpya.',
 ];

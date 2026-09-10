@@ -71,6 +71,7 @@ class UserController extends Controller
 
         $this->authorizeUnitForAdmin($request->user(), (int) $validated['unit_id']);
         $unit = $this->validateRoleForUnit($validated['role'], (int) $validated['unit_id']);
+        $this->guardAgainstSecondLead($validated['role'], $unit);
 
         $validated['supervisor_id'] = $this->validatedSupervisorId(
             $request->user(),
@@ -123,6 +124,7 @@ class UserController extends Controller
 
         $this->authorizeUnitForAdmin($request->user(), (int) $validated['unit_id']);
         $unit = $this->validateRoleForUnit($validated['role'], (int) $validated['unit_id']);
+        $this->guardAgainstSecondLead($validated['role'], $unit, $user);
         $this->guardAgainstCasualUnitTypeChange($user, $unit, $request->boolean('confirm_unit_type_change'));
 
         $validated['supervisor_id'] = $this->validatedSupervisorId(
@@ -161,6 +163,10 @@ class UserController extends Controller
         $user->update($validated);
         $after = $user->fresh()->only(['name', 'email', 'role', 'unit_id', 'supervisor_id', 'is_active', 'job_title', 'phone']);
 
+        // Their role, unit or active status may have just changed, which can
+        // leave people reporting to somebody who cannot approve for them.
+        $this->releaseInvalidSubordinates($user->fresh());
+
         // Deactivation must lock the account out now, not at next login.
         if ($wasDeactivated) {
             $this->sessions->revokeAllFor($user);
@@ -195,6 +201,88 @@ class UserController extends Controller
             'hq_section'      => ['staff', 'head', 'manager', 'hr', 'system_admin'],
             default => [],
         };
+    }
+
+    /**
+     * Roles that are a single post rather than a rank: a section has one lead,
+     * a directorate one Director, a standalone unit one Manager, a centre one
+     * Centre Manager. Nothing enforced this, so a section could be given three
+     * Heads — and its staff would then be shown three people to choose between,
+     * with no way to tell which one actually leads them.
+     *
+     * hq_section lists both head and manager because which one leads depends on
+     * the directorate: scientific sections are led by a head, Corporate
+     * Services sections by a manager. Either way there is one of them.
+     */
+    private function singularLeadRolesFor(string $unitType): array
+    {
+        return match ($unitType) {
+            'hq_section'      => ['head', 'manager'],
+            'hq_standalone'   => ['manager'],
+            'hq_directorate'  => ['director'],
+            'research_centre' => ['centre_manager'],
+            default => [],
+        };
+    }
+
+    /**
+     * Refuse to appoint a second holder of a post that only one person holds.
+     * Refusing rather than quietly demoting the incumbent: who replaces whom is
+     * an administrative decision, not something to infer from a dropdown.
+     */
+    private function guardAgainstSecondLead(string $role, Unit $unit, ?User $user = null): void
+    {
+        $leadRoles = $this->singularLeadRolesFor($unit->type);
+
+        if (! in_array($role, $leadRoles, true)) {
+            return;
+        }
+
+        $incumbent = User::query()
+            ->where('unit_id', $unit->id)
+            ->whereIn('role', $leadRoles)
+            ->where('is_active', true)
+            ->when($user, fn ($query) => $query->whereKeyNot($user->getKey()))
+            ->orderBy('name')
+            ->first();
+
+        if ($incumbent) {
+            throw ValidationException::withMessages([
+                'role' => __('users.lead_post_already_held', [
+                    'name' => $incumbent->name,
+                    'role' => __('common.role_'.$incumbent->role),
+                    'unit' => $unit->name,
+                ]),
+            ]);
+        }
+    }
+
+    /**
+     * Cut loose anyone still reporting to a user who can no longer supervise
+     * them — because their role changed, they moved unit, or they were
+     * deactivated. Left alone, the stored supervisor_id keeps routing requests
+     * to somebody with no authority to approve them: demoting a Head of Section
+     * used to leave their staff with an ordinary colleague as step one of their
+     * approval chain, and nothing anywhere said so.
+     *
+     * The link is cleared rather than guessed at, so each person picks again.
+     */
+    private function releaseInvalidSubordinates(User $supervisor): void
+    {
+        $subordinates = User::with('unit')->where('supervisor_id', $supervisor->getKey())->get();
+
+        foreach ($subordinates as $subordinate) {
+            if ($this->supervisors->isValidCandidate(
+                $supervisor->getKey(),
+                $subordinate->unit,
+                $subordinate->role,
+                $subordinate->getKey(),
+            )) {
+                continue;
+            }
+
+            $subordinate->forceFill(['supervisor_id' => null])->save();
+        }
     }
 
     private function validateRoleForUnit(string $role, int $unitId): Unit

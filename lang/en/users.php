@@ -85,4 +85,5 @@ return [
     'role_desc_director_general' => 'Ultimate final approver for all HQ requests.',
     'role_desc_hr'               => 'Receives notification copies only — cannot approve.',
     'role_desc_system_admin'     => 'Manages user accounts, roles, and unit assignments.',
+    'lead_post_already_held' => ':name is already the :role of :unit. A unit has one lead at a time — change their role first, then appoint the new one.',
 ];
